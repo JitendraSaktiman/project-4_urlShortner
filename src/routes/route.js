@@ -4,7 +4,7 @@ const urlController = require("../controller/URLController");
 
 //user Register
 router.post("/url/shorten",urlController.shotrenUrl)
-/* router.get('/books',middleware.authentication,bookController.getbooks) */
+router.get('/:url/shorten',urlController.redirectOriginalUrl)
 
 //If url is Incorrect
 router.post("*", (req,res) =>{

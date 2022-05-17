@@ -17,6 +17,10 @@ const shotrenUrl = async (req, res) => {
     if (Object.keys(data).length == 0) {
       return res.status(400).send({ status: false, message: "Feild Can't Empty.Please Enter Some Details" });
     }
+
+    if (!validUrl.isUri(baseUrl)) {
+      return res.status(400).send({ status: false, message: "Invalid baseUrl" });
+    }
     if (!data.longUrl) {
       return res.status(400).send({ status: false, message: "Please Enter longUrl" });
     }
@@ -48,7 +52,32 @@ const shotrenUrl = async (req, res) => {
   }
 };
 
+//............................................Get API................................................................
+
+const redirectOriginalUrl = async (req, res) => {
+  try {
+     const url=req.params.url
+     if(url)
+     {
+      const findUrl = await URLMODEL.findOne({ urlCode:url});
+      if(!findUrl)
+      {
+        return res.status(404).send({ status: false, message: "Url Not Found" });
+      }
+        return res.status(302).redirect(findUrl.longUrl);
+     }
+    }
+
+    catch (err) {
+      res.status(500).send({ status: false, error: err.message });
+    }
+  };
+
+
+
+
 
 
 
 module.exports.shotrenUrl = shotrenUrl
+module.exports.redirectOriginalUrl = redirectOriginalUrl
