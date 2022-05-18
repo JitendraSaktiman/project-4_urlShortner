@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const urlController = require("../controller/URLController");
 
-//user Register
+//------------------user Register------------------------------
 router.post("/url/shorten",urlController.shotrenUrl)
-router.get('/:url/shorten',urlController.redirectOriginalUrl)
 
-//If url is Incorrect
+router.get('/:urlCode',urlController.redirectOriginalUrl)
+
+//-------------------If url is Incorrect---------------------------
+
 router.post("*", (req,res) =>{
 
     return res.status(404).send({ message:"Page Not Found"})
