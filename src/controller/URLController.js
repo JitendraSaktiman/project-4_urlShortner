@@ -3,7 +3,7 @@ const validUrl = require('valid-url')
 const shortid = require('shortid');
 
 
-//.............................................PHASE (1) Create user........................................................
+//.............................................PHASE (1) ShortenUrl........................................................
 
 
 const shotrenUrl = async (req, res) => {
@@ -21,7 +21,7 @@ const shotrenUrl = async (req, res) => {
     if (!validUrl.isUri(baseUrl)) {
       return res.status(400).send({ status: false, message: "Invalid baseUrl" });
     }
-    if (!data.longUrl) {
+    if (!longUrl) {
       return res.status(400).send({ status: false, message: "Please Enter longUrl" });
     }
     obj.longUrl=longUrl
@@ -30,17 +30,19 @@ const shotrenUrl = async (req, res) => {
       return res.status(400).send({ status: false, message: "Invalid longUrl" });
     }
 
-      const findUrl = await URLMODEL.findOne({ longUrl: data.longUrl });
-      if(findUrl){
-        return res.status(400).send({ status: false, message: "This URL is already exist.Plz give another URL" });
-      }
-      const urlCode = shortid.generate()
+    const urlCode = shortid.generate()
     if(urlCode){
-      obj.urlCode=urlCode
+      obj.urlCode=urlCode.toLowerCase()
     }
+
     const shortUrl = baseUrl + '/' + urlCode
       if(shortUrl){
         obj.shortUrl=shortUrl
+      }
+      const findURLandCODE= await URLMODEL.findOne({ longUrl:longUrl});
+
+      if(findURLandCODE){
+        return res.status(400).send({ status: false, message: findURLandCODE});
       }
 
       const Urldata = await URLMODEL.create(obj);
@@ -56,13 +58,13 @@ const shotrenUrl = async (req, res) => {
 
 const redirectOriginalUrl = async (req, res) => {
   try {
-     const url=req.params.url
+     const url=req.params.urlCode
      if(url)
      {
       const findUrl = await URLMODEL.findOne({ urlCode:url});
       if(!findUrl)
       {
-        return res.status(404).send({ status: false, message: "Url Not Found" });
+        return res.status(404).send({ status: false, message: "Page Not Found" });
       }
         return res.status(302).redirect(findUrl.longUrl);
      }
@@ -72,10 +74,6 @@ const redirectOriginalUrl = async (req, res) => {
       res.status(500).send({ status: false, error: err.message });
     }
   };
-
-
-
-
 
 
 
