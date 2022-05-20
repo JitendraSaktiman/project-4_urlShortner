@@ -115,8 +115,8 @@ const shotrenUrl = async (req, res) => {
 
 const redirectToOriginalURL =  async function(req, res){
 try{
-  const url=req.params.urlCode
-     if(url){
+   const code = req.params.urlCode
+     if(code){
        const validshortid=shortid.isValid(req.params.urlCode)
        console.log(validshortid)
      if(!validshortid){
@@ -125,33 +125,27 @@ try{
      }}
 
 
-     // CACHING
-      let cachedurldata= await GET_ASYNC(`${req.params.urlCode}`)
-        /* console.log(cachedurldata) */
+     let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
 
-      // IF KEY -"VALUE OF URLCODE" IS PRESENT IN CACHE MEMORY
-         if(cachedurldata){
-          return res.status(302).redirect(JSON.parse(cachedurldata).longUrl);
-         }
+        if(cahcedProfileData) {
+            let changeToOriginalUrl = JSON.parse(cahcedProfileData)
+            return res.status(302).redirect(changeToOriginalUrl)
+        }
 
+        const url = await URLMODEL.findOne({urlCode: code})
 
-          //IF NOT FIND IN CACHE MEMORY THEN IT START FINDING IN MONGODB
-          const findUrl = await URLMODEL.findOne({urlCode:req.params.urlCode})
+        if(!url){
+            return res.status(404).send({status: false, message:'Url not found'})
+        }
 
-
-         // IF FIND ONE FUNCTION RETURNS NULL
-           if(!findUrl){
-            return res.status(404).send({ status: false, message: "Page Not Found" });
-          }
-
-          // USING SET TO ASSIGN NEW KEY VALUE PAIR IN CACHE
-           await SET_ASYNC(`${req.params.urlCode}`,JSON.stringify(findUrl.longUrl))
-           return res.status(302).redirect(findUrl.longUrl);
-      }
-
-    catch (err) {
-      res.status(500).send({ status: false, error: err.message });
+        await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
+        return res.status(302).redirect(url.longUrl)
     }
-  };
+    catch (err)
+    {
+        res.status(500).send({status: false , error: err.message})
+    }
+}
+
 
 module.exports = {shotrenUrl, redirectToOriginalURL}
