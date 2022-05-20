@@ -132,7 +132,7 @@ const redirectToOriginalURL =  async function(req, res){
       }
 
       await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
-      /* return res.status(302).redirect(url.longUrl) */
+      return res.status(302).redirect(url.longUrl)
   }
   catch (err)
   {
