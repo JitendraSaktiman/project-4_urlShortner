@@ -8,8 +8,6 @@ router.post("/url/shorten",urlController.shotrenUrl)//5
 router.get('/:urlCode',urlController.redirectOriginalUrl)
 
 
-router.get('/:urlCode',urlController.redirectOriginalUrl)
-
 //-------------------If url is Incorrect---------------------------
 
 router.post("*", (req,res) =>{
