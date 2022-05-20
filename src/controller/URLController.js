@@ -114,30 +114,44 @@ const shotrenUrl = async (req, res) => {
 //---------------------------------------------------------get API--------------------------------------------------------
 
 const redirectToOriginalURL =  async function(req, res){
+try{
+  const url=req.params.urlCode
+     if(url){
+       const validshortid=shortid.isValid(req.params.urlCode)
+       console.log(validshortid)
+     if(!validshortid){
+      return res.status(400).send({ status: false, message: "Invalid! UrlCode" });
 
-  try {
-      const code = req.params.urlCode
+     }}
 
-      let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
 
-      if(cahcedProfileData) {
-          let changeToOriginalUrl = JSON.parse(cahcedProfileData)
-          return res.status(302).redirect(changeToOriginalUrl)
+     // CACHING
+      let cachedurldata= await GET_ASYNC(`${req.params.urlCode}`)
+        /* console.log(cachedurldata) */
+
+      // IF KEY -"VALUE OF URLCODE" IS PRESENT IN CACHE MEMORY
+         if(cachedurldata){
+          return res.status(302).redirect(JSON.parse(cachedurldata).longUrl);
+         }
+
+
+          //IF NOT FIND IN CACHE MEMORY THEN IT START FINDING IN MONGODB
+          const findUrl = await URLMODEL.findOne({urlCode:req.params.urlCode})
+
+
+         // IF FIND ONE FUNCTION RETURNS NULL
+           if(!findUrl){
+            return res.status(404).send({ status: false, message: "Page Not Found" });
+          }
+
+          // USING SET TO ASSIGN NEW KEY VALUE PAIR IN CACHE
+           await SET_ASYNC(`${req.params.urlCode}`,JSON.stringify(findUrl.longUrl))
+           return res.status(302).redirect(findUrl.longUrl);
       }
 
-      const url = await URLMODEL.findOne({urlCode: code})
-
-      if(!url){
-          return res.status(404).send({status: false, message:'Page Not Found'})
-      }
-
-      await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
-      return res.status(302).redirect(url.longUrl)
-  }
-  catch (err)
-  {
-      res.status(500).send({status: false , error: err.message})
-  }
-}
+    catch (err) {
+      res.status(500).send({ status: false, error: err.message });
+    }
+  };
 
 module.exports = {shotrenUrl, redirectToOriginalURL}
