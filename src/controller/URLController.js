@@ -96,12 +96,12 @@ const shotrenUrl = async (req, res) => {
        const findURLandCODE= await URLMODEL.findOne({ longUrl:data.longUrl});
        if(findURLandCODE){
         const savecachedata=await SET_ASYNC(`${findURLandCODE.longUrl}`,JSON.stringify(findURLandCODE))
-         return res.status(200).send({ status: true, message: findURLandCODE});
+         return res.status(200).send({ status: true, data: findURLandCODE});
          }
 
     //create shortUrl
     const Urldata = await URLMODEL.create(obj);
-    return res.status(201).send({ status: true, message: "Success", data: Urldata });
+    return res.status(201).send({ status: true, data: Urldata });
 
   }
   /* return res.status(201).send({ status: true, message: "Success", data: savecachedata }); */
