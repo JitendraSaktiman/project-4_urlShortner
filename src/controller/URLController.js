@@ -5,6 +5,12 @@ const redis = require("redis");
 
 //............................................Connection for Redis..............................................................................
 
+const validURL= (VAlidURL) => {
+  return String(VAlidURL ).trim().match(
+    /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
+};
+
+
 
 const { promisify } = require("util");
 
@@ -21,8 +27,6 @@ redisClient.auth("oHjWrRNVpK78lqi3t7lzvLO4vi9xc6O2", function (err) {
 redisClient.on("connect", async function () {
   console.log("Connected to Redis..");
 });
-
-
 
 //1. connect to the server
 //2. use the commands :
@@ -62,8 +66,12 @@ const shotrenUrl = async (req, res) => {
     //set data inside obj.longurl
     obj.longUrl = data.longUrl
 
-    if (!validUrl.isUri(data.longUrl)) {
+    if (!validUrl.isUri(data.longUrl.trim())) {
       return res.status(400).send({ status: false, message: "Invalid longUrl" });
+    }
+
+    if(!validURL(data.longUrl.trim())){
+      return res.status(400).send({ status: false, message: "Invalid! longUrl" });
     }
 
     const urlCode = shortid.generate()
@@ -72,22 +80,23 @@ const shotrenUrl = async (req, res) => {
       obj.urlCode=urlCode.toLowerCase()
     }
 
-    const shortUrl = baseUrl + '/' + urlCode
+    const shortUrl = baseUrl + '/' + urlCode.toLowerCase()
       if(shortUrl){
         obj.shortUrl=shortUrl
       }
 
-       let cachedurldata= await GET_ASYNC(`${urlCode}`)
+       let cachedurldata= await GET_ASYNC(`${data.longUrl.trim()}`)
+       console.log(cachedurldata)
 
       if(cachedurldata){
         return res.status(200).send(JSON.parse(cachedurldata));
        }
 
+
        const findURLandCODE= await URLMODEL.findOne({ longUrl:data.longUrl});
        if(findURLandCODE){
-        const savecachedata=await SET_ASYNC(`${findURLandCODE.urlCode}`,JSON.stringify(findURLandCODE))
-        console.log(savecachedata)
-         return res.status(400).send({ status: true, message: findURLandCODE});
+        const savecachedata=await SET_ASYNC(`${findURLandCODE.longUrl}`,JSON.stringify(findURLandCODE))
+         return res.status(200).send({ status: true, message: findURLandCODE});
          }
 
     //create shortUrl
@@ -104,48 +113,31 @@ const shotrenUrl = async (req, res) => {
 
 //---------------------------------------------------------get API--------------------------------------------------------
 
-const redirectOriginalUrl = async (req, res) => {
+const redirectToOriginalURL =  async function(req, res){
+
   try {
-     const url=req.params.urlCode
-     if(url){
-       const validshortid=shortid.isValid(req.params.urlCode)
-       console.log(validshortid)
-     if(!validshortid){
-      return res.status(400).send({ status: false, message: "Invalid! UrlCode" });
+      const code = req.params.urlCode
 
-     }}
+      let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
 
-
-     // CACHING
-      let cachedurldata= await GET_ASYNC(`${req.params.urlCode}`)
-        /* console.log(cachedurldata) */
-
-      // IF KEY -"VALUE OF URLCODE" IS PRESENT IN CACHE MEMORY
-         if(cachedurldata){
-          return res.status(302).redirect(JSON.parse(cachedurldata).longUrl);
-         }
-
-
-         //IF NOT FIND IN CACHE MEMORY THEN IT START FINDING IN MONGODB
-          const findUrl = await URLMODEL.findOne({urlCode:req.params.urlCode})
-
-
-         // IF FIND ONE FUNCTION RETURNS NULL
-           if(!findUrl){
-            return res.status(404).send({ status: false, message: "Page No Found" });
-          }
-
-          // USING SET TO ASSIGN NEW KEY VALUE PAIR IN CACHE
-           await SET_ASYNC(`${req.params.urlCode}`,JSON.stringify(findUrl.longUrl))
-           return res.status(302).redirect(findUrl.longUrl);
+      if(cahcedProfileData) {
+          let changeToOriginalUrl = JSON.parse(cahcedProfileData)
+          return res.status(302).redirect(changeToOriginalUrl)
       }
 
-    catch (err) {
-      res.status(500).send({ status: false, error: err.message });
-    }
-  };
+      const url = await URLMODEL.findOne({urlCode: code})
 
+      if(!url){
+          return res.status(404).send({status: false, message:'Page Not Found'})
+      }
 
+      await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
+      /* return res.status(302).redirect(url.longUrl) */
+  }
+  catch (err)
+  {
+      res.status(500).send({status: false , error: err.message})
+  }
+}
 
-module.exports.shotrenUrl = shotrenUrl
-module.exports.redirectOriginalUrl = redirectOriginalUrl
+module.exports = {shotrenUrl, redirectToOriginalURL}

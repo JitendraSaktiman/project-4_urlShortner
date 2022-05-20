@@ -5,7 +5,7 @@ const urlController = require("../controller/URLController");
 
 //user Register
 router.post("/url/shorten",urlController.shotrenUrl)//5
-router.get('/:urlCode',urlController.redirectOriginalUrl)
+router.get('/:urlCode',urlController.redirectToOriginalURL)
 
 
 //-------------------If url is Incorrect---------------------------
