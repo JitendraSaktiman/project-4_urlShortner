@@ -5,8 +5,8 @@ const redis = require("redis");
 
 //............................................Connection for Redis..............................................................................
 
-const validURL= (VAlidURL) => {
-  return String(VAlidURL ).trim().match(
+const validURL = (VAlidURL) => {
+  return String(VAlidURL).trim().match(
     /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
 };
 
@@ -16,11 +16,11 @@ const { promisify } = require("util");
 
 //Connect to redis
 const redisClient = redis.createClient(
-  19232,
-  "redis-19232.c301.ap-south-1-1.ec2.cloud.redislabs.com",
+  16993,
+  "redis-16993.c85.us-east-1-2.ec2.cloud.redislabs.com",
   { no_ready_check: true }
 );
-redisClient.auth("oHjWrRNVpK78lqi3t7lzvLO4vi9xc6O2", function (err) {
+redisClient.auth("lU16Jmihy0xqmR3etZGT5EZa1czBc2Dt", function (err) {
   if (err) throw err;
 });
 
@@ -70,34 +70,34 @@ const shotrenUrl = async (req, res) => {
       return res.status(400).send({ status: false, message: "Invalid longUrl" });
     }
 
-    if(!validURL(data.longUrl.trim())){
+    if (!validURL(data.longUrl.trim())) {
       return res.status(400).send({ status: false, message: "Invalid! longUrl" });
     }
 
     const urlCode = shortid.generate()
 
-    if(urlCode){
-      obj.urlCode=urlCode.toLowerCase()
+    if (urlCode) {
+      obj.urlCode = urlCode.toLowerCase()
     }
 
     const shortUrl = baseUrl + '/' + urlCode.toLowerCase()
-      if(shortUrl){
-        obj.shortUrl=shortUrl
-      }
+    if (shortUrl) {
+      obj.shortUrl = shortUrl
+    }
 
-       let cachedurldata= await GET_ASYNC(`${data.longUrl.trim()}`)
-       console.log(cachedurldata)
+    let cachedurldata = await GET_ASYNC(`${data.longUrl.trim()}`)
+    console.log(cachedurldata)
 
-      if(cachedurldata){
-        return res.status(200).send(JSON.parse(cachedurldata));
-       }
+    if (cachedurldata) {
+      return res.status(200).send(JSON.parse(cachedurldata));
+    }
 
 
-       const findURLandCODE= await URLMODEL.findOne({ longUrl:data.longUrl});
-       if(findURLandCODE){
-        const savecachedata=await SET_ASYNC(`${findURLandCODE.longUrl}`,JSON.stringify(findURLandCODE))
-         return res.status(200).send({ status: true, data: findURLandCODE});
-         }
+    const findURLandCODE = await URLMODEL.findOne({ longUrl: data.longUrl });
+    if (findURLandCODE) {
+      const savecachedata = await SET_ASYNC(`${findURLandCODE.longUrl}`, JSON.stringify(findURLandCODE))
+      return res.status(200).send({ status: true, data: findURLandCODE });
+    }
 
     //create shortUrl
     const Urldata = await URLMODEL.create(obj);
@@ -113,39 +113,39 @@ const shotrenUrl = async (req, res) => {
 
 //---------------------------------------------------------get API--------------------------------------------------------
 
-const redirectToOriginalURL =  async function(req, res){
-try{
-   const code = req.params.urlCode
-     if(code){
-       const validshortid=shortid.isValid(req.params.urlCode)
-       console.log(validshortid)
-     if(!validshortid){
-      return res.status(400).send({ status: false, message: "Invalid! UrlCode" });
+const redirectToOriginalURL = async function (req, res) {
+  try {
+    const code = req.params.urlCode
+    if (code) {
+      const validshortid = shortid.isValid(req.params.urlCode)
+      console.log(validshortid)
+      if (!validshortid) {
+        return res.status(400).send({ status: false, message: "Invalid! UrlCode" });
 
-     }}
-
-
-     let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
-
-        if(cahcedProfileData) {
-            let changeToOriginalUrl = JSON.parse(cahcedProfileData)
-            return res.status(302).redirect(changeToOriginalUrl)
-        }
-
-        const url = await URLMODEL.findOne({urlCode: code})
-
-        if(!url){
-            return res.status(404).send({status: false, message:'Url not found'})
-        }
-
-        await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
-        return res.status(302).redirect(url.longUrl)
+      }
     }
-    catch (err)
-    {
-        res.status(500).send({status: false , error: err.message})
+
+
+    let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
+
+    if (cahcedProfileData) {
+      let changeToOriginalUrl = JSON.parse(cahcedProfileData)
+      return res.status(302).redirect(changeToOriginalUrl)
     }
+
+    const url = await URLMODEL.findOne({ urlCode: code })
+
+    if (!url) {
+      return res.status(404).send({ status: false, message: 'Url not found' })
+    }
+
+    await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(url.longUrl))
+    return res.status(302).redirect(url.longUrl)
+  }
+  catch (err) {
+    res.status(500).send({ status: false, error: err.message })
+  }
 }
 
 
-module.exports = {shotrenUrl, redirectToOriginalURL}
+module.exports = { shotrenUrl, redirectToOriginalURL }
